@@ -31,7 +31,10 @@ graph = Neo4jGraph(
 
 doc_transformer = LLMGraphTransformer(
     llm=llm,
-    )
+    allowed_nodes=["Technology", "Concept", "Skill", "Event", "Person", "Object"],
+    allowed_relationships=["USES", "HAS", "IS", "AT", "KNOWS"],
+    node_properties=["name", "description"],
+)
 
 # Load and split the documents
 loader = DirectoryLoader(DOCS_PATH, glob="**/*.pdf", loader_cls=PyPDFLoader)
