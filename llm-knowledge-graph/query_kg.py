@@ -6,8 +6,15 @@ from langchain.prompts import PromptTemplate
 from dotenv import load_dotenv
 load_dotenv()
 
-llm = ChatOpenAI(
+
+qa_llm = ChatOpenAI(
     openai_api_key=os.getenv('OPENAI_API_KEY'), 
+    model="gpt-3.5-turbo",
+)
+
+cypher_llm = ChatOpenAI(
+    openai_api_key=os.getenv('OPENAI_API_KEY'), 
+    model="gpt-4",
     temperature=0
 )
 
@@ -28,6 +35,16 @@ Always use case insensitive search when matching strings.
 Schema:
 {schema}
 
+Examples: 
+# Use case insensitive matching for entity ids
+MATCH (c:Chunk)-[:HAS_ENTITY]->(e)
+WHERE e.id =~ '(?i)entityName'
+
+# Find documents that reference entities
+MATCH (d:Document)<-[:PART_OF]-(:Chunk)-[:HAS_ENTITY]->(e)
+WHERE e.id =~ '(?i)entityName'
+RETURN d
+
 The question is:
 {question}"""
 
@@ -37,11 +54,14 @@ cypher_generation_prompt = PromptTemplate(
 )
 
 cypher_chain = GraphCypherQAChain.from_llm(
-    llm,
+    qa_llm=qa_llm,
+    cypher_llm=cypher_llm,
     graph=graph,
     cypher_prompt=cypher_generation_prompt,
     verbose=True,
-    allow_dangerous_requests=True
+    enhanced_schema=True,
+    allow_dangerous_requests=True,
+    exclude_types=["Session", "Message", "LAST_MESSAGE", "NEXT"],
 )
 
 def run_cypher(q):
